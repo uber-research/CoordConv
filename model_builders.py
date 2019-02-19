@@ -20,28 +20,20 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from pdb import set_trace as bb
 import tensorflow as tf
 from tf_plus import BatchNormalization, Lambda   # BN + Lambda layers are custom, rest are just from tf.layers
 from tf_plus import Conv2D, MaxPooling2D, Flatten, Dense, UpSampling2D
 from tf_plus import he_normal, relu
-from tf_plus import Layers, SequentialNetwork, l2reg, PreprocessingLayers
+from tf_plus import Layers, SequentialNetwork, l2reg
 from general.tfutil import tf_reshape_like
 from CoordConv import AddCoords, CoordConv
-
-from IPython import embed
-
-from tensorflow.python.layers import base
 
 Deconv = tf.layers.Conv2DTranspose
 ReLu = Lambda(lambda xx: relu(xx))
 LReLu = Lambda(lambda xx: lrelu(xx))
-#Softplus = Lambda(lambda xx: tf.nn.softplus(xx))
 Softmax = Lambda(lambda xx: tf.nn.softmax(xx, axis=-1))
-#Sigmoid = Lambda(lambda xx: tf.nn.sigmoid(xx))
 Tanh = Lambda(lambda xx: tf.nn.tanh(xx))
 GlobalPooling = Lambda(lambda xx: tf.reduce_mean(xx,[1,2]))
-#AveragePooling2D = tf.layers.AveragePooling2D
 
 class DeconvPainter(Layers):
     '''A Deconv net that paints an image as directed by x,y coord inputs '''
@@ -49,7 +41,6 @@ class DeconvPainter(Layers):
     def __init__(self, l2=0, x_dim=64, y_dim=64, fs=3, mul=1, 
                  onthefly=True, use_mse_loss=False, use_sigm_loss=False):
         super(DeconvPainter, self).__init__()
-        #self.l2 = l2
         self.x_dim = x_dim
         self.y_dim = y_dim
         self.onthefly = onthefly
@@ -58,7 +49,6 @@ class DeconvPainter(Layers):
         
         with tf.variable_scope("model"):
             self.l('model', SequentialNetwork([
-                   Lambda(lambda xx: tf.cast(xx, 'float32')),
                    Lambda(lambda xx: tf.reshape(xx, [-1, 1, 1, 2])),
                    Deconv(64*mul, (fs,fs), (2,2), padding='same',
                        kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),  
@@ -88,14 +78,11 @@ class DeconvPainter(Layers):
                    Deconv(1, (fs,fs), (2,2), padding='same',  
                        kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),
                        # output_shape=[None, 64, 64, 1]
-                   #Sigmoid
                    ], name='deconv_painter'))
 
         return 
     
     def call(self, inputs):
-       
-       
         # Shapes:
         # input_coords: (batch, 2)
         # logits: (batch, x_dim, y_dim, 1)
@@ -229,7 +216,6 @@ class ConvImagePainter(Layers):
     def __init__(self, l2=0, fs=3, mul=1, use_sigm_loss=True,
                  use_mse_loss=False, version='working'):
         super(ConvImagePainter, self).__init__()
-        #self.l2 = l2
         self.use_sigm_loss = use_sigm_loss
         self.use_mse_loss = use_mse_loss
         assert version in ['simple', 'working', 'dilation'], "model version not supported"
@@ -243,43 +229,6 @@ class ConvImagePainter(Layers):
             net = build_working_conv_onehot2image(l2, mul, fs, name='model')
             self.l('model', net)
         
-        #elif version='dilation':
-        #        block1 = [Conv2D(4, (3,3), padding='same',
-        #                        kernel_initializer=he_normal, 
-        #                        kernel_regularizer=l2reg(l2)),
-        #                  Conv2D(4, (3,3), padding='same',
-        #                        dilation_rate=2,
-        #                        kernel_initializer=he_normal, 
-        #                        kernel_regularizer=l2reg(l2)),
-        #                  Conv2D(4, (3,3), padding='same',
-        #                        dilation_rate=3,
-        #                        kernel_initializer=he_normal, 
-        #                        kernel_regularizer=l2reg(l2))]
-
-        #        block2 = [Conv2D(4, (3,3), padding='same',
-        #                        kernel_initializer=he_normal, 
-        #                        kernel_regularizer=l2reg(l2)),
-        #                  Conv2D(4, (3,3), padding='same',
-        #                        dilation_rate=2,
-        #                        kernel_initializer=he_normal, 
-        #                        kernel_regularizer=l2reg(l2)),
-        #                  Conv2D(4, (3,3), padding='same',
-        #                        dilation_rate=3,
-        #                        kernel_initializer=he_normal, 
-        #                        kernel_regularizer=l2reg(l2))]
-
-        #        block3 = [Conv2D(4, (3,3), padding='same',
-        #                        kernel_initializer=he_normal, 
-        #                        kernel_regularizer=l2reg(l2)),
-        #                  Conv2D(4, (3,3), padding='same',
-        #                        dilation_rate=2,
-        #                        kernel_initializer=he_normal, 
-        #                        kernel_regularizer=l2reg(l2)),
-        #                  Conv2D(4, (3,3), padding='same',
-        #                        dilation_rate=3,
-        #                        kernel_initializer=he_normal, 
-        #                        kernel_regularizer=l2reg(l2))]
-
         return 
     
     def call(self, inputs):
@@ -363,59 +312,120 @@ class ConvImagePainter(Layers):
 class ConvRegressor(Layers):
     '''A model net that paints a circle with one-hot center inputs'''
 
-    def __init__(self, l2=0, fs=3, mul=1, use_mse_loss=True):
+    def __init__(self, l2=0, x_dim=64, y_dim=64, fs=3,
+                 mul=1, _type='conv_uniform'):
+        self.type=_type
 
         super(ConvRegressor, self).__init__()
-        #self.l2 = l2
-        self.use_mse_loss = use_mse_loss
-        
-        with tf.variable_scope("model"):
-            self.l('model', SequentialNetwork([
-                   Conv2D(16*mul, (fs,fs), padding='same',
-                       kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),  
-                   BatchNormalization(momentum=0.9, epsilon=1e-5),
-                   ReLu,
-                   MaxPooling2D(pool_size=2,strides=2,padding='valid'),
-                   Conv2D(16*mul, (fs,fs), padding='same',
-                       kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),  
-                   BatchNormalization(momentum=0.9, epsilon=1e-5),
-                   ReLu,
-                   MaxPooling2D(pool_size=2,strides=2,padding='valid'),
-                   Conv2D(32*mul, (fs,fs), padding='same',
-                       kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),  
-                   BatchNormalization(momentum=0.9, epsilon=1e-5),
-                   ReLu,
-                   Conv2D(32*mul, (fs,fs), padding='same',
-                       kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),  
-                   BatchNormalization(momentum=0.9, epsilon=1e-5),
-                   ReLu,
-                   Conv2D(2, (fs,fs), padding='same',
+        include_r = False
+
+        def coordconv_model():
+        #from onehots to coordinate with coordinate augmentation at beginning
+
+            return SequentialNetwork([
+                AddCoords(x_dim=x_dim, y_dim=y_dim, with_r=include_r, skiptile=True), # (batch, 64, 64, 4 or 5)
+                Conv2D(8, (1,1), padding='same',
                        kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),
-                   ReLu,
-                   GlobalPooling #pool_size=-1,strides=1,padding='valid'),
-                   #Sigmoid
-                   ]))
+                Conv2D(8, (1,1), padding='same',
+                       kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),
+                Conv2D(8, (1,1), padding='same',
+                       kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),
+                Conv2D(8, (fs,fs), padding='same',
+                       kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),
+                Conv2D(2, (fs,fs), padding='same',
+                        kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),  
+                MaxPooling2D(pool_size=64,strides=64,padding='valid'),
+
+                ])
+
+        def big_conv2():
+
+            return SequentialNetwork([
+                Conv2D(16*mul, (5,5), padding='same',
+                   kernel_initializer=he_normal, strides=2,kernel_regularizer=l2reg(l2)),  
+                ReLu,
+                Conv2D(16*mul, (1,1), padding='same',strides=1,
+                       kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),  
+                ReLu,
+
+                BatchNormalization(momentum=0.9, epsilon=1e-5),
+                Conv2D(16*mul, (3,3), padding='same',strides=1,
+                   kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),  
+                ReLu,
+
+                Conv2D(16*mul, (3,3), padding='same',
+                   kernel_initializer=he_normal, strides=2,kernel_regularizer=l2reg(l2)),  
+                ReLu,
+                Conv2D(16*mul, (3,3), padding='same',
+                       kernel_initializer=he_normal, strides=2,kernel_regularizer=l2reg(l2)),  
+                BatchNormalization(momentum=0.9, epsilon=1e-5),
+                ReLu,
+                Conv2D(16*mul, (fs,fs), padding='same',strides=2,
+                       kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),  
+                ReLu,
+                Conv2D(16*mul, (1,1), padding='same',strides=1,
+                       kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),  
+                ReLu,
+                Conv2D(16*mul, (fs,fs), padding='same',strides=2,
+                       kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),  
+                ReLu,
+                Conv2D(2, (fs,fs), padding='same',
+                       kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),  
+                ReLu,
+                GlobalPooling #pool_size=-1,strides=1,padding='valid'),
+                ])
+
+        def big_conv():
+
+            return SequentialNetwork([
+                Conv2D(16*mul, (3,3), padding='same',
+                   kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),  
+                ReLu,
+                MaxPooling2D(pool_size=2,strides=2,padding='valid'),
+                Conv2D(16*mul, (3,3), padding='same',
+                   kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),  
+                ReLu,
+                MaxPooling2D(pool_size=2,strides=2,padding='valid'),
+                Conv2D(16*mul, (3,3), padding='same',
+                       kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),  
+                ReLu,
+                MaxPooling2D(pool_size=2,strides=2,padding='valid'),
+                Conv2D(16*mul, (fs,fs), padding='same',
+                       kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),  
+                ReLu,
+                Flatten(),
+                Dense(64),
+                ReLu,
+                Dense(2) #pool_size=-1,strides=1,padding='valid'),
+                ])
+
+
+        with tf.variable_scope("model"):
+            if self.type=='conv_uniform':
+                self.l('model',big_conv())
+            elif self.type=='conv_quarant':
+                self.l('model',big_conv2())
+            elif self.type=='coordconv':
+                self.l('model',coordconv_model())
+
         return 
-    
+
     def call(self, inputs):
       
-        assert len(inputs) == 2, "model requires 2 tensors: input_images, target coordinates"
+        assert len(inputs) == 2, "model requires 2 tensors: input_images (onehots), target coordinates"
         input_images, labels = inputs[0], inputs[1]
-        
-        logits = self.model(input_images)
-        logits = tf.identity(logits, name='logits') # just to rename it
 
-        # no need to flat
-        #logits_flat = Flatten()(logits)
+        logits = self.model(input_images)
+        logits_flat = Flatten()(logits)
        
         # Shapes:
-        # logits: (batch, 2)
-        
-        labels = tf.cast(labels,tf.float32)
+        # logits: (batch, x_dim, y_dim, 1)
+        # logits_flat: (batch, x_dim*y_dim)
+        labels_flat = tf.cast(Flatten()(labels),tf.float32)
 
-        self.a('logits', logits)
+        self.a('logits', logits_flat)
         #self.a('logits_flat', logits_flat)
-        self.a('labels', labels)
+        self.a('labels', labels_flat)
         #self.a('labels_flat', labels_flat)
 
         self.make_losses_and_metrics()
@@ -425,21 +435,19 @@ class ConvRegressor(Layers):
     def make_losses_and_metrics(self):
 
         mse_loss = tf.reduce_mean(
-                    tf.pow(self.logits - self.labels, 2))
+                    tf.square(self.logits - self.labels))
 
+        sigm_loss = tf.reduce_mean(
+                tf.nn.sigmoid_cross_entropy_with_logits(
+                    logits=self.logits, labels=self.labels))
+        
         # regularizers
         reg_loss = tf.losses.get_regularization_loss()
         reg_losses = tf.losses.get_regularization_losses()
 
-        eucl_dist = tf.reduce_mean(tf.sqrt(tf.reduce_sum(tf.square(self.logits-self.labels), axis=-1)))
-            
-        #manh_dist = tf.reduce_mean(tf.to_float(tf.abs(argmax_x-argmax_x_l) + tf.abs(argmax_y-argmax_y_l)))
-
-        #self.a('reg_losses', reg_losses)
+        eucl_dist = tf.reduce_mean(tf.sqrt(tf.reduce_sum(tf.to_float(tf.square((64.0*self.logits)-(64.0*self.labels))),-1)))
         self.a('eucl_dist', eucl_dist, trackable=True)
-        #self.a('manh_dist', manh_dist, trackable=True)
-        self.a('mse_loss', mse_loss, trackable=True)
-        self.a('reg_loss', reg_loss, trackable=True)
+        #self.a('mse_dist', mse_loss, trackable=True)
 
         self.a('loss', mse_loss+reg_loss, trackable=True)
         return
@@ -464,19 +472,15 @@ class CoordConvPainter(Layers):
             self.l('model', SequentialNetwork([
                 Conv2D(32*mul, (1,1), padding='valid',
                     kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),  
-                #BatchNormalization(momentum=0.9, epsilon=1e-5),
                 ReLu,
                 Conv2D(32*mul, (1,1), padding='valid',
                     kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),  
-                #BatchNormalization(momentum=0.9, epsilon=1e-5),
                 ReLu,
                 Conv2D(64*mul, (1,1), padding='valid',
                     kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),  
-                #BatchNormalization(momentum=0.9, epsilon=1e-5),
                 ReLu,
                 Conv2D(64*mul, (1,1), padding='valid',
                     kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),  
-                #BatchNormalization(momentum=0.9, epsilon=1e-5),
                 ReLu,
                 Conv2D(1, (1,1), padding='same',
                     kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),
@@ -532,9 +536,6 @@ class CoordConvPainter(Layers):
       
         mse_loss = tf.reduce_mean(
                     tf.pow(self.logits_flat - self.labels_flat, 2))
-        # Validated -- the same as above 
-        #mse_loss_tf = tf.losses.mean_squared_error(labels=self.labels_flat, predictions=self.logits_flat)
-        #self.a('mse_loss_tf', mse_loss_tf, trackable=True)
 
         sigm_loss = tf.reduce_mean(
                 tf.nn.sigmoid_cross_entropy_with_logits(
@@ -625,16 +626,9 @@ class UpsampleConvPainter(Layers):
                        Lambda(lambda xx: tf.reshape(xx, [-1, 1, 1, 2])),
                        UpSampling2D(size=(2,2)),
                            # output_shape=[None, 2, 2, 2]
-                       #AddCoords(x_dim=2, y_dim=2, with_r=include_r, skiptile=True),
-                       #    # output_shape=[None, 2, 2, 4]
-                       #Conv2D(64*mul, (fs,fs), padding='same',
-                       #    kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),  
-                       # TEST COORDCONV HERE
                        CoordConv(2, 2, False, 64*mul, (fs,fs), padding='same',
                            kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)
-                           #x_dim=2, y_dim=2, with_r=include_r, skiptile=True
                            ),
-                       # TEST COORDCONV END
                            # output_shape=[None, 2, 2, 4]
                        BatchNormalization(momentum=0.9, epsilon=1e-5),
                        ReLu,
@@ -672,7 +666,6 @@ class UpsampleConvPainter(Layers):
                        Conv2D(1, (fs,fs), padding='same',
                            kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),
                            # output_shape=[None, 64, 64, 1]
-                       #Sigmoid
                        ], name='upsample_coordconv_painter'))
             else:
                 self.l('model', SequentialNetwork([
@@ -713,7 +706,6 @@ class UpsampleConvPainter(Layers):
                        Conv2D(1, (fs,fs), padding='same',
                            kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),
                            # output_shape=[None, 64, 64, 1]
-                       #Sigmoid
                        ], name='upsample_conv_painter'))
         return 
     
@@ -763,9 +755,6 @@ class UpsampleConvPainter(Layers):
       
         mse_loss = tf.reduce_mean(
                     tf.pow(self.logits_flat - self.labels_flat, 2))
-        # Validated -- the same as above 
-        #mse_loss_tf = tf.losses.mean_squared_error(labels=self.labels_flat, predictions=self.logits_flat)
-        #self.a('mse_loss_tf', mse_loss_tf, trackable=True)
 
         sigm_loss = tf.reduce_mean(
                 tf.nn.sigmoid_cross_entropy_with_logits(
@@ -1255,9 +1244,6 @@ class DeconvBottleneckPainter(Layers):
 def lrelu(x, leak=0.2, name="lrelu"):
     return tf.maximum(x, leak*x)
 
-
-
-
 def build_working_conv_onehot2image(l2, mul, fs, name=''):
     net = SequentialNetwork([
                 Conv2D(8*mul, (fs,fs), padding='same',
@@ -1326,7 +1312,6 @@ class CoordConvGAN(Layers):
                 ReLu,
                 Conv2D(cout, (1,1), padding='same',
                     kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),
-                #Tanh
                 ], name='coordconv_generator'))
         
             self.l('deconv_generator', SequentialNetwork([
@@ -1368,23 +1353,8 @@ class CoordConvGAN(Layers):
                 #Dense(1)
                 ], name='discriminator_minus_last'))
             
-            #self.l('discriminator_minus_last', SequentialNetwork([
-            #    Conv2D(64, (1,1), 2, padding='same', activation=lrelu),
-            #    Conv2D(128, (1,1), 2, padding='same'),
-            #    BatchNormalization(momentum=0.9, epsilon=1e-5),
-            #    LReLu,
-            #    Conv2D(256, (1,1), 2, padding='same'),
-            #    BatchNormalization(momentum=0.9, epsilon=1e-5),
-            #    LReLu,
-            #    Conv2D(512, (1,1), 2, padding='same'),
-            #    BatchNormalization(momentum=0.9, epsilon=1e-5),
-            #    LReLu,
-            #    Flatten(),
-            #    #Dense(1)
-            #    ], name='discriminator_minus_last'))
 
             self.l('discriminator', SequentialNetwork(
-                #self.discriminator_minus_last.layers+[Dense(1)], 
                 [self.discriminator_minus_last,
                 Dense(1)],
                 name='discriminator'))
@@ -1464,7 +1434,6 @@ class CoordConvGAN(Layers):
             self.a('g_loss_feture_match', g_loss_feture_match, trackable=True)
             
             self.a('g_loss', g_loss_feture_match * feature_match_loss_weight + g_loss_basic + reg_loss, trackable=True)
-            #self.a('g_loss', g_loss_feture_match, trackable=True)
             self.a('d_loss', d_loss_real + d_loss_fake, trackable=True)
 
         else:
@@ -1532,7 +1501,6 @@ def build_deconv_coords2image(l2, mul, fs, name=''):
                 Deconv(1, (fs,fs), (2,2), padding='same',  
                     kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),
                     # output_shape=[None, 64, 64, 1]
-                    #Sigmoid
                 ], name=name)
     return net
 

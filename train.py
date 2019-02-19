@@ -31,8 +31,8 @@ from IPython import embed
 import colorama
 import tensorflow as tf
 #
-lab_root = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..')
-sys.path.insert(1, lab_root)
+#lab_root = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..')
+#sys.path.insert(1, lab_root)
 #
 from general.util import tic, toc, tic2, toc2, tic3, toc3, mkdir_p, WithTimer
 from general.tfutil import (get_collection_intersection_summary, log_scalars, 
@@ -173,13 +173,13 @@ def main():
         
         image_c = train_y.shape[-1]
 
-    elif args.arch == 'conv_regressor':
+    elif args.arch == 'conv_regressor' or args.arch == 'coordconv_regressor':
         fd = h5py.File(args.data_h5,'r')
-        train_y = np.array(fd['train_locations'], dtype=int) # shape (2368, 2)
-        train_x = np.array(fd['train_imagegray'], dtype=float)/255.0 # shape (2368, 64, 64, 1)
-        val_y = np.array(fd['val_locations'], dtype=float) # shape (768, 2)
-        val_x = np.array(fd['val_imagegray'], dtype=float)/255.0 # shape (768, 64, 64, 1)
-        
+        train_y = np.array(fd['train_normalized_locations'], dtype=float) # shape (2368, 2)
+        train_x = np.array(fd['train_onehots'], dtype=float) #/255.0 # shape (2368, 64, 64, 1)
+        val_y = np.array(fd['val_normalized_locations'], dtype=float) # shape (768, 2)
+        val_x = np.array(fd['val_onehots'], dtype=float) # shape (768, 64, 64, 1)
+
         image_c = train_x.shape[-1] 
     
     elif args.arch == 'coordconv_rendering' or args.arch == 'deconv_bottleneck':
@@ -199,8 +199,7 @@ def main():
     val_size = val_x.shape[0]
 
     # 1. CREATE MODEL
-
-    input_coords = tf.placeholder(shape=(None, 2), dtype='int32', name='input_coords') # cast later in model into float
+    input_coords = tf.placeholder(shape=(None, 2), dtype='float32', name='input_coords') # cast later in model into float
     input_onehot = tf.placeholder(shape=(None, args.x_dim, args.y_dim, 1), dtype='float32', name='input_onehot') 
     input_images = tf.placeholder(shape=(None, args.x_dim, args.y_dim, image_c), dtype='float32', name='input_images') 
     
@@ -219,12 +218,19 @@ def main():
         model([input_coords]) if DATA_GEN_ON_THE_FLY else model([input_coords, input_onehot])
 
     if args.arch == 'conv_regressor':
-        model = ConvRegressor(l2=args.l2, fs=args.filter_size, mul=args.channel_mul)
+        regress_type = 'conv_uniform' if 'uniform' in args.data_h5 else 'conv_quarant'
+        model = ConvRegressor(l2=args.l2, fs=args.filter_size, mul=args.channel_mul, _type=regress_type)
         model.a('input_coords', input_coords)
-        model.a('input_images', input_images)
+        model.a('input_onehot', input_onehot)
         # call model on inputs
-        model([input_images,input_coords])
+        model([input_onehot,input_coords])
 
+    if args.arch == 'coordconv_regressor':
+        model = ConvRegressor(l2=args.l2, fs=args.filter_size, mul=args.channel_mul, _type='coordconv')
+        model.a('input_coords', input_coords)
+        model.a('input_onehot', input_onehot)
+        # call model on inputs
+        model([input_onehot, input_coords])
 
     if args.arch == 'conv_onehot_image':
         model = ConvImagePainter(l2=args.l2, fs=args.filter_size,
@@ -347,7 +353,9 @@ def main():
     print 'LR Policy:', lr_policy
 
     #add_grad_summaries(grads_and_vars)
-    image_summaries_traintest(model.logits)
+    if not args.arch.endswith('regressor'):
+        image_summaries_traintest(model.logits)
+
     if 'input_onehot' in model.named_keys(): 
         image_summaries_traintest(model.input_onehot)
     if 'input_images' in model.named_keys(): 
@@ -436,18 +444,20 @@ def main():
         if not args.skipval:
             feed_dict = {learning_phase(): 0}
             if 'input_coords' in model.named_keys():
-                val_coords = val_y if args.arch == 'conv_regressor' else val_x
+                val_coords = val_y if args.arch.endswith('regressor') else val_x
                 feed_dict.update({model.input_coords: val_coords})
             
             if 'input_onehot' in model.named_keys(): 
                 #if 'val_onehot' not in locals():
                 if not args.arch == 'coordconv_rendering' and not args.arch == 'deconv_bottleneck':
-                    val_onehot = val_x if args.arch == 'conv_onehot_image' else val_y 
+                    if args.arch == 'conv_onehot_image' or args.arch.endswith('regressor'):
+                        val_onehot = val_x
+                    else:
+                        val_onehot = val_y 
                 feed_dict.update({
                     model.input_onehot: val_onehot,
                     })
             if 'input_images' in model.named_keys():
-                val_images = val_x if args.arch == 'conv_regressor' else val_y
                 feed_dict.update({
                     model.input_images: val_images,
                     })
@@ -534,18 +544,20 @@ def main():
                             
             feed_dict = {learning_phase(): 1, input_lr: lr}
             if 'input_coords' in model.named_keys():
-                batch_coords = batch_y if args.arch == 'conv_regressor' else batch_x
+                batch_coords = batch_y if args.arch.endswith('regressor') else batch_x
                 feed_dict.update({model.input_coords: batch_coords})
             if 'input_onehot' in model.named_keys():
                 #if 'batch_onehot' not in locals():
                 #if not (args.arch == 'coordconv_rendering' and args.add_interm_loss):
                 if not args.arch == 'coordconv_rendering' and not args.arch == 'deconv_bottleneck':
-                    batch_onehot = batch_x if args.arch == 'conv_onehot_image' else batch_y
+                    if args.arch == 'conv_onehot_image' or args.arch.endswith('regressor'):
+                        batch_onehot = batch_x 
+                    else:
+                        batch_onehot = batch_y
                 feed_dict.update({
                     model.input_onehot: batch_onehot,
                     })
             if 'input_images' in model.named_keys():
-                batch_images = batch_x if args.arch == 'conv_regressor' else batch_y
                 feed_dict.update({
                     model.input_images: batch_images,
                     })
@@ -685,10 +697,13 @@ def evaluate_net(args, buddy, model, train_size, train_x, train_y, val_x, val_y,
     if args.output:
         final_fetch = {
                 #'prob': model.prob,
-                'pixelwise_prob': model.pixelwise_prob, 
+                #'pixelwise_prob': model.pixelwise_prob, 
                 'logits': model.logits}
         if 'prob' in model.named_keys():
             final_fetch.update({'prob': model.prob})
+        if 'pixelwise_prob' in model.named_keys():
+            final_fetch.update({'pixelwise_prob': model.pixelwise_prob})
+
 
         if args.arch == 'coordconv_rendering' or args.arch == 'deconv_bottleneck':
             final_fetch.update({
@@ -701,7 +716,11 @@ def evaluate_net(args, buddy, model, train_size, train_x, train_y, val_x, val_y,
     
         # create dataset but write later
         for kk in final_fetch.keys():
-            ff.create_dataset(kk+'_train', (minibatch_size, args.x_dim, args.y_dim, 1),
+            if args.arch.endswith('regressor'):
+                ff.create_dataset(kk+'_train', (minibatch_size, 2), maxshape=(train_size, 2),
+                        dtype=float, compression='lzf', chunks=True)
+            else:
+                ff.create_dataset(kk+'_train', (minibatch_size, args.x_dim, args.y_dim, 1),
                               maxshape=(train_size, args.x_dim, args.y_dim, 1),
                               dtype=float, compression='lzf', chunks=True)
         
@@ -734,12 +753,15 @@ def evaluate_net(args, buddy, model, train_size, train_x, train_y, val_x, val_y,
                 #feed_dict_va.update({model.input_images: val_images})
     
         if 'input_coords' in model.named_keys():
+            if args.arch.endswith('regressor'):
+                _loc_keys = ('train_normalized_locations', 'val_normalized_locations', 'float32') 
+            else:
+                _loc_keys = ('train_locations', 'val_locations', 'int32')
             feed_dict_tr.update({
-                model.input_coords: np.array(fd['train_locations'][start_idx:end_idx],
-                    dtype=int)})
+                model.input_coords: np.array(fd[_loc_keys[0]][start_idx:end_idx],
+                    dtype=_loc_keys[2])})
             if ii == 0:
-                feed_dict_va.update({model.input_coords: np.array(fd['val_locations'], dtype=int)})
-                #feed_dict_va.update({model.input_coords: val_coords})
+                feed_dict_va.update({model.input_coords: np.array(fd[_loc_keys[1]], dtype=_loc_keys[2])})
 
         _final_tr_metrics = sess_run_dict(sess, model.trackable_dict(), feed_dict=feed_dict_tr)
         _final_tr_metrics['weights'] = end_idx - start_idx
@@ -757,9 +779,8 @@ def evaluate_net(args, buddy, model, train_size, train_x, train_y, val_x, val_y,
                 if start_idx > 0:
                     n_samples_ = ff[kk+'_train'].shape[0]
                     ff[kk+'_train'].resize(n_samples_+end_idx-start_idx, axis=0)
-                ff[kk+'_train'][start_idx:,:,:,:] = final_tr[kk]
+                ff[kk+'_train'][start_idx:,...] = final_tr[kk]
 
-    
     final_va_metrics = sess_run_dict(sess, model.trackable_dict(), feed_dict=feed_dict_va)
     final_tr_metrics = average_dict_values(final_tr_metrics)
 
