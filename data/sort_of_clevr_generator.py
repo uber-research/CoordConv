@@ -42,11 +42,9 @@ train_size = 50000
 test_size = 200
 img_size = 64
 size = 10 
-question_size = 11 ##6 for one-hot vector of color, 2 for question type, 3 for question subtype
-"""Answer : [yes, no, rectangle, circle, r, g, b, o, k, y]"""
 
-nb_questions = 10
-dirs = os.path.join("./", "sort_of_clevr")
+#dirs = os.path.join("./", "sort_of_clevr")
+dirs = os.path.join(os.path.abspath(os.path.dirname(__file__)), "sort_of_clevr")
 
 mkdir_p(dirs)
 

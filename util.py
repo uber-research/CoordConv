@@ -18,8 +18,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import os
 import argparse
 import scipy.misc
+import h5py
 from general.util import string_or_gitresman_or_none
 
 DEFAULT_ARCH_CHOICES = ['mnist']
@@ -171,7 +173,12 @@ def save_average_image(images, image_path):
 def load_sort_of_clevr():
     data_dir = os.path.join("./data", "sort_of_clevr")
 
-    filename = data_dir + '/sort_of_clevr_2objs_10rad_50000imgs_64x.h5'
+    filename = os.path.join(data_dir,
+            'sort_of_clevr_2objs_10rad_50000imgs_64x.h5')
+
+    if not os.path.isfile(filename):
+        print('{} does not exist.. Try running ./data/sort_of_clevr_generator.py ?'.format(filename))
+        return
 
     ff = h5py.File(filename, 'r')
     if 'test_x' in ff:
