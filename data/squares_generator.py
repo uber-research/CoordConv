@@ -383,8 +383,9 @@ class dataset_writer(object):
         return np_dict
 
     def to_h5(self,filename):
-
-        _filename = os.path.join(filename+".h5")
+        
+        _dir = os.path.abspath(os.path.dirname(__file__))
+        _filename = os.path.join(_dir, filename+".h5")
 
         #for some reason without deleting old file, opening
         #h5 with 'w' flag will lead to a corrupted archive
