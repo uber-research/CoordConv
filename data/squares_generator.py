@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# code to generate dots and squares the red and blue simple shape data used  
+# code to generate dots and squares dataset 
 import copy
 import cv2
 import os, sys

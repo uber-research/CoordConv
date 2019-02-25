@@ -32,33 +32,25 @@ from IPython import embed
 import colorama
 import setproctitle
 import tensorflow as tf
-import tensorflow.contrib.eager as tfe
-#
-lab_root = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', '..')
-sys.path.insert(1, lab_root)
-#
+
 from general.util import tic, toc, tic2, toc2, tic3, toc3, mkdir_p, WithTimer
-from general.vision import ImagePreproc
-from general.ffdb import db
-#from data.mnist.loader import centered_normed_mnist
-from brook.tfutil import hist_summaries_traintest, add_grads_and_vars_hist_summaries, image_summaries_traintest, get_collection_intersection, get_collection_intersection_summary, log_scalars, sess_run_dict, summarize_weights, summarize_opt, tf_assert_all_init, tf_get_uninitialized_variables, add_grad_summaries
-from brook.stats_buddy import StatsBuddy
+from general.tfutil import (hist_summaries_traintest, add_grads_and_vars_hist_summaries, 
+                            image_summaries_traintest, get_collection_intersection_summary, 
+                            log_scalars, sess_run_dict, summarize_weights) 
+from general.stats_buddy import StatsBuddy
 from tf_plus import setup_session_and_seeds, learning_phase, print_trainable_warnings
 from model_builders import CoordConvGAN
-from exp.tf_nets.util import make_standard_parser
-from exp.cgan.utils import save_images, save_average_image, load_sort_of_clevr
+from util import make_standard_parser, save_images, save_average_image, load_sort_of_clevr
 
 arch_choices = ['simple_coordconv_in_g', 'simple_coordconv_in_gd',
                 'clevr_coordconv_in_g', 'clevr_coordconv_in_gd', 
                 'simple_gan', 'clevr_gan']
 
 def main():
-    #tfe.enable_eager_execution()
     parser = make_standard_parser('Train a GAN model on simple one-object binary images or Clevr two-object color images',
                                   arch_choices=arch_choices, skip_train=True, skip_val=True)
     parser.add_argument('--z_dim', type=int, default=10, help='Dimension of noise vector')
     parser.add_argument('--lr2', type=float, default=None, help='learning rate for generator')
-    parser.add_argument('--eager', action='store_true', help='enable tf eager mode (experimental).')
     parser.add_argument('--feature_match', '-fm', action='store_true', help='use feature matching loss for generator.')
     parser.add_argument('--feature_match_loss_weight', '-fmalpha', type=float, default=1.0, help='weight on the feature matching loss for generator.')
     parser.add_argument('--pairedz', action='store_true', help='If True, pair the same z with a training batch each epoch')
@@ -69,9 +61,6 @@ def main():
 
     args.skipval = True
 
-    if args.eager:
-        tfe.enable_eager_execution()
-
     minibatch_size = args.minibatch
     train_style, val_style = ('', '') if args.nocolor else (colorama.Fore.BLUE, colorama.Fore.MAGENTA)
     evaltrain_style = '' if args.nocolor or args.eval_train_every <= 0 else colorama.Fore.CYAN
@@ -79,8 +68,7 @@ def main():
     black_divider = True if args.arch.startswith('clevr') else False
 
     # Get a TF session and set numpy and TF seeds
-    if not args.eager:
-        sess = setup_session_and_seeds(args.seed, assert_gpu=not args.cpu)
+    sess = setup_session_and_seeds(args.seed, assert_gpu=not args.cpu)
 
     # 0. LOAD DATA
     if args.arch.startswith('simple'):
@@ -90,7 +78,7 @@ def main():
         train_x = np.concatenate((train_x, val_x), axis=0) # shape (3136, 64, 64, 1)
 
     elif args.arch.startswith('clevr'):
-        (train_x, val_x) = load_sort_of_clevr(twoobjs=True)
+        (train_x, val_x) = load_sort_of_clevr()
         train_x = np.concatenate((train_x, val_x), axis=0) # shape (50000, 64, 64, 3)
 
     else:
@@ -141,23 +129,6 @@ def main():
     g_grads_and_vars = g_opt.compute_gradients(model.g_loss, g_vars, gate_gradients=tf.train.Optimizer.GATE_GRAPH)
     g_train_step = g_opt.apply_gradients(g_grads_and_vars)
     
-    #with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
-    #    d_train_step = tf.train.AdamOptimizer(args.lr, beta1=args.beta1).minimize(model.d_loss, var_list=d_vars)
-    #    g_train_step = tf.train.AdamOptimizer(args.lr2, beta1=args.beta1).minimize(model.g_loss, var_list=g_vars)
-
-
-    #add_grad_summaries(d_grads_and_vars)
-    #add_grad_summaries(g_grads_and_vars)
-    #summarize_opt(d_opt)
-    #summarize_opt(g_opt)
-
-    #d_grads = [ii[0] for ii in d_grads_and_vars]
-    #g_grads = [ii[0] for ii in g_grads_and_vars]
-
-    #d_grads_mean_sq = tf.add_n([tf.reduce_mean(tf.square(ii)) for ii in d_grads]) / len(d_grads)
-    #g_grads_mean_sq = tf.add_n([tf.reduce_mean(tf.square(ii)) for ii in g_grads]) / len(g_grads)
-
-
     hist_summaries_traintest(model.d_real_logits, model.d_fake_logits)
     
     add_grads_and_vars_hist_summaries(d_grads_and_vars)
@@ -179,27 +150,10 @@ def main():
         
     buddy.tic()    # call if new run OR resumed run
 
-    # Initialize any missed vars (e.g. optimization momentum, ... if not loaded from checkpoint)
-    #uninitialized_vars = tf_get_uninitialized_variables(sess)
-    #init_missed_vars = tf.variables_initializer(uninitialized_vars, 'init_missed_vars')
-    #sess.run(init_missed_vars)
-    ## Print warnings about any TF vs. Keras shape mismatches
-    ##warn_misaligned_shapes(model)
-    ## Make sure all variables, which are model variables, have been initialized (e.g. model params and model running BN means)
-    #tf_assert_all_init(sess)
     tf.global_variables_initializer().run()
 
 
     # 4. SETUP TENSORBOARD LOGGING
-    #d_logits_real_sum = tf.summary.histogram("d_logits_real", model.d_real_logits)
-    #d_logits_fake_sum = tf.summary.histogram("d_logits_fake", model.d_fake_logits)
-
-    #d_grads_mean_sq_sum = tf.summary.scalar("d_grads_mean_sq", d_grads_mean_sq)
-    #g_grads_mean_sq_sum = tf.summary.scalar("g_grads_mean_sq", g_grads_mean_sq)
-
-    # final summary operations
-    #d_logits_sum = tf.summary.merge([d_logits_real_sum, d_logits_fake_sum])
-    #grads_mean_sum = tf.summary.merge([d_grads_mean_sq_sum, g_grads_mean_sq_sum])
 
     param_histogram_summaries = get_collection_intersection_summary('param_collection', 'orig_histogram')
     train_histogram_summaries = get_collection_intersection_summary('train_collection', 'orig_histogram')

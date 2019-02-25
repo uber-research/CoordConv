@@ -19,6 +19,7 @@
 # SOFTWARE.
 
 import argparse
+import scipy.misc
 from general.util import string_or_gitresman_or_none
 
 DEFAULT_ARCH_CHOICES = ['mnist']
@@ -149,3 +150,39 @@ def image_separator(consolidated_images, nh=10, nw=10):
                 _image = consolidated_images[start_h:start_h + h, start_w:start_w + w, :]
             images.append(_image)
     return images
+
+
+def save_images(images, size, image_path, black_divider=True):
+    image = np.squeeze(merge(images, size, black_divider=black_divider))
+    return scipy.misc.imsave(image_path, image)
+
+
+def save_average_image(images, image_path):
+    im = images.sum(0)
+    im -= im.min()
+    im *= 255.0 / im.max()
+    #out = Image.fromarray(im).convert('RGB')
+    #out.save(image_path)
+    #return
+    image = np.squeeze(im)
+    image = scipy.misc.imresize(image, [im.shape[0]*10,im.shape[1]*10,-1])
+    return scipy.misc.imsave(image_path, image)
+
+def load_sort_of_clevr():
+    data_dir = os.path.join("./data", "sort_of_clevr")
+
+    filename = data_dir + '/sort_of_clevr_2objs_10rad_50000imgs_64x.h5'
+
+    ff = h5py.File(filename, 'r')
+    if 'test_x' in ff:
+        train_x = ff['train_x']
+        test_x = ff['test_x'] 
+    else:
+        cutoff = int(ff['train_x'].shape[0] * 0.9)
+        train_x = ff['train_x'][:cutoff]
+        test_x = ff['train_x'][cutoff:]
+        
+    if train_x.size * 4 + test_x.size * 4 < 1e9:
+        train_x, test_x = np.array(train_x), np.array(test_x)
+
+    return (train_x, test_x)

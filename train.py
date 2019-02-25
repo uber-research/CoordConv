@@ -44,7 +44,7 @@ from tf_plus import setup_session_and_seeds, learning_phase, print_trainable_war
 from model_builders import (DeconvPainter, ConvImagePainter, ConvRegressor,
                             CoordConvPainter, CoordConvImagePainter,
                             DeconvBottleneckPainter, UpsampleConvPainter)
-from util import *
+from util import make_standard_parser, merge_dict_append, average_dict_values
 
 # all choices of tasks/architectures, to be used for --arch
 
@@ -86,7 +86,7 @@ def main():
         skip_val=True)
     # re-add train and val h5s as optional
     parser.add_argument('--data_h5', type=str,
-                        default='../data/rectangle_4_uniform.h5',
+                        default='./data/rectangle_4_uniform.h5',
                         help='data file in hdf5.')
     parser.add_argument('--x_dim', type=int, default=64,
                         help='x dimension of the output image')
