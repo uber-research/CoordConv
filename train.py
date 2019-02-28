@@ -255,7 +255,7 @@ def main():
 
     if args.arch == 'conv_regressor':
         regress_type = 'conv_uniform' if 'uniform' in args.data_h5 else 'conv_quarant'
-        model = ConvRegressor(l2=args.l2, fs=args.filter_size, mul=args.channel_mul,
+        model = ConvRegressor(l2=args.l2, mul=args.channel_mul,
                               _type=regress_type)
         model.a('input_coords', input_coords)
         model.a('input_onehot', input_onehot)
@@ -263,7 +263,7 @@ def main():
         model([input_onehot, input_coords])
 
     if args.arch == 'coordconv_regressor':
-        model = ConvRegressor(l2=args.l2, fs=args.filter_size, mul=args.channel_mul,
+        model = ConvRegressor(l2=args.l2, mul=args.channel_mul,
                               _type='coordconv')
         model.a('input_coords', input_coords)
         model.a('input_onehot', input_onehot)
