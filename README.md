@@ -11,7 +11,11 @@ This repository contains source code necessary to reproduce the results presente
 }
 ```
 
-For more on this project, see the [Uber AI Labs Blog post](https://eng.uber.com/coordconv).
+For more on this project, including a 8-min video explanation, see the [Uber AI Labs Blog post](https://eng.uber.com/coordconv).
+
+## CoordConv layer
+The standalone CoordConv layer, wrapped as a ```tf.layers``` object, can be found in ```CoordConv.py```. Models constructed in ```model_builders.py``` show usage of it.
+
 
 ## Data
 To generate *Not-so-Clevr* dataset, which consists of squares randomly positioned on a canvas, and with uniform and quarant splits:
@@ -24,13 +28,11 @@ To generate two-object *Sort-of-Clevr* images, run a modification of the [Sort-o
 python ./data/sort_of_clevr_generator.py
 ```
 
-## CoordConv layer
-The standalone CoordConv layer, wrapped as a ```tf.layers``` object, can be found in ```CoordConv.py``` 
 
 ## Supervised Coordinate Tasks
-The ```train.py``` script executes the training of all supervised coordinate tasks as described in the paper. Use ```--arch``` to toggle among different tasks.
+The ```train.py``` script executes the training of all supervised coordinate tasks as described in the paper. Use ```--arch``` to toggle among different tasks. Refer to ```experiment_logs.sh``` for the series of experiments enumerating different hyperparameters for each task. Note that we generate random experiment ids for job tracking in the Uber internal cluster, which can be ignored. We also use [resman](https://github.com/yosinski/GitResultsManager) to keep results organized, which is highly recommended!
 
-To run *Supervised Coordinate Classification*:
+Examples to run *Supervised Coordinate Classification*:
 
 ```
 # coordconv version
@@ -40,7 +42,7 @@ python train.py --arch deconv_classification -mb 16 -E 2000 -L 0.01 --opt adam -
 ```
 Use ```--data_h5 data/rectangle_4_uniform.h5``` and ```--data_h5 data/rectangle_4_quadrant.h5``` to observe the performances on two types of splits. 
 
-To run *Supervised Rendering*:
+Examples to run *Supervised Rendering*:
 
 ```
 # coordconv version
@@ -50,7 +52,7 @@ python train.py --arch deconv_rendering -mb 16 -E 2000 -L 0.01 --opt adam --l2 0
 ```
 Use ```--data_h5 data/rectangle_4_uniform.h5``` and ```--data_h5 data/rectangle_4_quadrant.h5``` to observe the performances on two types of splits. 
 
-To run *Supervised Coordinate Regression*:
+Examples to run *Supervised Coordinate Regression*:
 
 ```
 # coordconv version
