@@ -11,11 +11,10 @@ This repository contains source code necessary to reproduce the results presente
 }
 ```
 
-For more on this project, including a 8-min video explanation, see the [Uber AI Labs Blog post](https://eng.uber.com/coordconv).
+For more on this project, including a 8-min video explanation, see the [Uber AI Labs blog post](https://eng.uber.com/coordconv).
 
-## CoordConv layer
+## CoordConv layer, as a drop-in replacement for convolution
 The standalone CoordConv layer, wrapped as a ```tf.layers``` object, can be found in ```CoordConv.py```. Models constructed in ```model_builders.py``` show usage of it.
-
 
 ## Data
 To generate *Not-so-Clevr* dataset, which consists of squares randomly positioned on a canvas, and with uniform and quarant splits:
@@ -30,7 +29,9 @@ python ./data/sort_of_clevr_generator.py
 
 
 ## Supervised Coordinate Tasks
-The ```train.py``` script executes the training of all supervised coordinate tasks as described in the paper. Use ```--arch``` to toggle among different tasks. Refer to ```experiment_logs.sh``` for the series of experiments enumerating different hyperparameters for each task. Note that we generate random experiment ids for job tracking in the Uber internal cluster, which can be ignored. We also use [resman](https://github.com/yosinski/GitResultsManager) to keep results organized, which is highly recommended!
+The ```train.py``` script executes the training of all supervised coordinate tasks as described in the paper. Use ```--arch``` to toggle among different tasks. 
+
+The file ```experiment_logs.sh``` records the entire series of experiments enumerating different hyperparameters for each task, as exactly used to produce results in the paper. Note that we generate random experiment ids for job tracking in the Uber internal cluster, which can be ignored. We also use [resman](https://github.com/yosinski/GitResultsManager) to keep results organized, which is highly recommended!
 
 Examples to run *Supervised Coordinate Classification*:
 
