@@ -22,7 +22,7 @@ class DimDistributed(Layers):
         assert 0 in sdims, 'not distributing over the batch dimension is not supported'
         assert len(sdims) == len(set(sdims)), 'duplicate dim specified'
         self.sdims = sdims
-        if self.sdims == range(self.sdims[-1]+1):
+        if self.sdims == list(range(self.sdims[-1]+1)):
             # sdims are something like [0], [0, 1], [0, 1, 2], ...
             self.transpose_required = False
         else:

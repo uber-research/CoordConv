@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+
 
 from .backend import learning_phase
 from .network import BaseLayer, Layers, SequentialNetwork

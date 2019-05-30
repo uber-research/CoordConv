@@ -23,7 +23,7 @@
 import sys
 import os
 import gzip
-import cPickle as pickle
+import pickle as pickle
 import numpy as np
 import h5py
 import itertools
@@ -131,7 +131,7 @@ def main():
     sess = setup_session_and_seeds(args.seed, assert_gpu=not args.cpu)
 
     # 0. Load data or generate data on the fly
-    print 'Loading data: {}'.format(args.data_h5)
+    print('Loading data: {}'.format(args.data_h5))
 
     if args.arch in ['deconv_classification',
                      'coordconv_classification',
@@ -361,10 +361,10 @@ def main():
         model.a('input_onehot', input_onehot)
         model([input_coords, input_onehot])
 
-    print 'All model weights:'
+    print('All model weights:')
     summarize_weights(model.trainable_weights)
     #print 'Model summary:'
-    print 'Another model summary:'
+    print('Another model summary:')
     model.summarize_named(prefix='  ')
     print_trainable_warnings(model)
 
@@ -387,7 +387,7 @@ def main():
     add_grads_and_vars_hist_summaries(grads_and_vars)
 
     summarize_opt(opt)
-    print 'LR Policy:', lr_policy
+    print('LR Policy:', lr_policy)
 
     # add_grad_summaries(grads_and_vars)
     if not args.arch.endswith('regressor'):
@@ -475,7 +475,7 @@ def main():
             int(val_size % minibatch_size > 0)
 
     if args.ipy:
-        print 'Embed: before train / val loop (Ctrl-D to continue)'
+        print('Embed: before train / val loop (Ctrl-D to continue)')
         embed()
 
     while buddy.epoch < args.epochs + 1:
@@ -542,7 +542,7 @@ def main():
             buddy.note_list(
                 model.trackable_names(), [
                     result_val[k] for k in model.trackable_names()], prefix='val_')
-            print (
+            print((
                 '[%5d] [%2d/%2d] val: %s (%.3gs/i)' %
                 (buddy.train_iter,
                  buddy.epoch,
@@ -550,7 +550,7 @@ def main():
                  buddy.epoch_mean_pretty_re(
                      '^val_',
                      style=val_style),
-                    toc2()))
+                    toc2())))
 
             if args.output and do_log_val(buddy.epoch, buddy.train_iter, 0):
                 log_scalars(
@@ -577,7 +577,7 @@ def main():
                 save_path = saver.save(
                     sess, '%s/%s_%04d.ckpt' %
                     (args.output, args.snapshot_to, buddy.epoch))
-                print 'snappshotted model to', save_path
+                print('snappshotted model to', save_path)
                 with gzip.open('%s/%s_misc_%04d.pkl.gz' % (args.output, args.snapshot_to, buddy.epoch), 'w') as ff:
                     saved = {'buddy': buddy}
                     pickle.dump(saved, ff)
@@ -589,17 +589,17 @@ def main():
 
         if buddy.epoch == args.epochs:
             if args.ipy:
-                print 'Embed: at end of training (Ctrl-D to exit)'
+                print('Embed: at end of training (Ctrl-D to exit)')
                 embed()
             break   # Extra pass at end: just report val stats and skip training
 
-        print '********* at epoch %d, LR is %g' % (buddy.epoch, lr)
+        print('********* at epoch %d, LR is %g' % (buddy.epoch, lr))
 
         # 3. Train on training set
         if args.shuffletrain:
             train_order = np.random.permutation(train_size)
         tic3()
-        for ii in xrange(train_iters):
+        for ii in range(train_iters):
             tic2()
             start_idx = ii * minibatch_size
             end_idx = min(start_idx + minibatch_size, train_size)
@@ -669,7 +669,7 @@ def main():
                     result_train[k] for k in model.trackable_names()], prefix='train_')
 
             if do_log_train(buddy.epoch, buddy.train_iter, ii):
-                print (
+                print((
                     '[%5d] [%2d/%2d] train: %s (%.3gs/i)' %
                     (buddy.train_iter,
                      buddy.epoch,
@@ -677,7 +677,7 @@ def main():
                      buddy.epoch_mean_pretty_re(
                          '^train_',
                          style=train_style),
-                        toc2()))
+                        toc2())))
 
             if args.output and do_log_train(buddy.epoch, buddy.train_iter, ii):
                 if train_histogram_summaries is not None:
@@ -695,8 +695,8 @@ def main():
                         name: value for name, value in buddy.last_list_re('^train_')}, prefix='train')
 
             if ii > 0 and ii % 100 == 0:
-                print '  %d: Average iteration time over last 100 train iters: %.3gs' % (
-                    ii, toc3() / 100)
+                print('  %d: Average iteration time over last 100 train iters: %.3gs' % (
+                    ii, toc3() / 100))
                 tic3()
 
             buddy.inc_train_iter()   # after finished training a mini-batch
@@ -709,34 +709,34 @@ def main():
                     'mean_%s' %
                     name: value for name, value in buddy.epoch_mean_list_re('^train_')}, prefix='train')
 
-    print '\nFinal'
-    print '%02d:%d val:   %s' % (buddy.epoch,
+    print('\nFinal')
+    print('%02d:%d val:   %s' % (buddy.epoch,
                                  buddy.train_iter,
                                  buddy.epoch_mean_pretty_re(
                                      '^val_',
-                                     style=val_style))
-    print '%02d:%d train: %s' % (buddy.epoch,
+                                     style=val_style)))
+    print('%02d:%d train: %s' % (buddy.epoch,
                                  buddy.train_iter,
                                  buddy.epoch_mean_pretty_re(
                                      '^train_',
-                                     style=train_style))
+                                     style=train_style)))
 
-    print '\nEnd of training. Saving evaluation results on whole train and val set.'
+    print('\nEnd of training. Saving evaluation results on whole train and val set.')
 
     final_tr_metrics, final_va_metrics = evaluate_net(
         args, buddy, model, train_size, train_x, train_y, val_x, val_y, fd, sess)
 
-    print '\nFinal evaluation on whole train and val'
-    for name, value in final_tr_metrics.iteritems():
-        print 'final_stats_eval train_%s %g' % (name, value)
-    for name, value in final_va_metrics.iteritems():
-        print 'final_stats_eval val_%s %g' % (name, value)
+    print('\nFinal evaluation on whole train and val')
+    for name, value in final_tr_metrics.items():
+        print('final_stats_eval train_%s %g' % (name, value))
+    for name, value in final_va_metrics.items():
+        print('final_stats_eval val_%s %g' % (name, value))
 
-    print '\nfinal_stats epochs %g' % buddy.epoch
-    print 'final_stats iters %g' % buddy.train_iter
-    print 'final_stats time %g' % buddy.toc()
+    print('\nfinal_stats epochs %g' % buddy.epoch)
+    print('final_stats iters %g' % buddy.train_iter)
+    print('final_stats time %g' % buddy.toc())
     for name, value in buddy.epoch_mean_list_all():
-        print 'final_stats %s %g' % (name, value)
+        print('final_stats %s %g' % (name, value))
 
     if args.output:
         writer.close()   # Flush and close
@@ -772,7 +772,7 @@ def evaluate_net(args, buddy, model, train_size, train_x, train_y,
             (args.output, buddy.epoch), 'w')
 
         # create dataset but write later
-        for kk in final_fetch.keys():
+        for kk in list(final_fetch.keys()):
             if args.arch.endswith('regressor'):
                 ff.create_dataset(kk + '_train', (minibatch_size, 2),
                     maxshape=(train_size, 2), dtype=float, 
@@ -791,7 +791,7 @@ def evaluate_net(args, buddy, model, train_size, train_x, train_y,
             ff.create_dataset('labels_val', data=val_y)
             ff.create_dataset('labels_train', data=train_y)
 
-    for ii in xrange(train_iters):
+    for ii in range(train_iters):
         start_idx = ii * minibatch_size
         end_idx = min(start_idx + minibatch_size, train_size)
 
@@ -838,11 +838,11 @@ def evaluate_net(args, buddy, model, train_size, train_x, train_y,
             if ii == 0:  # do only once
                 final_va = sess_run_dict(
                     sess, final_fetch, feed_dict=feed_dict_va)
-                for kk in final_fetch.keys():
+                for kk in list(final_fetch.keys()):
                     ff.create_dataset(kk + '_val', data=final_va[kk])
 
             final_tr = sess_run_dict(sess, final_fetch, feed_dict=feed_dict_tr)
-            for kk in final_fetch.keys():
+            for kk in list(final_fetch.keys()):
                 if start_idx > 0:
                     n_samples_ = ff[kk + '_train'].shape[0]
                     ff[kk + '_train'].resize(n_samples_ +
@@ -863,12 +863,12 @@ def evaluate_net(args, buddy, model, train_size, train_x, train_y,
 
         ff.close()
     else:
-        print '\nEpoch %d evaluation on whole train and val' % buddy.epoch
-        print 'Time elapsed: {}'.format(buddy.toc())
-        for name, value in final_tr_metrics.iteritems():
-            print 'final_stats_eval train_%s %g' % (name, value)
-        for name, value in final_va_metrics.iteritems():
-            print 'final_stats_eval val_%s %g' % (name, value)
+        print('\nEpoch %d evaluation on whole train and val' % buddy.epoch)
+        print('Time elapsed: {}'.format(buddy.toc()))
+        for name, value in final_tr_metrics.items():
+            print('final_stats_eval train_%s %g' % (name, value))
+        for name, value in final_va_metrics.items():
+            print('final_stats_eval val_%s %g' % (name, value))
 
     return final_tr_metrics, final_va_metrics
 

@@ -72,10 +72,10 @@ class NamedObjectStore(object):
         return singular_attr, plural_attr
 
     def names(self):
-        return self._objects.keys()
+        return list(self._objects.keys())
         
     def items(self):
-        return self._objects.items()
+        return list(self._objects.items())
         
     def name_exists(self, name):
         return name in self._objects
@@ -110,8 +110,8 @@ def setup_session_and_seeds(seed, assert_gpu=True, mem_fraction=None):
         sess = tf.InteractiveSession()
     np.random.seed(seed)
     tf.set_random_seed(seed)
-    print 'Set numpy and tensorflow random seeds to: %s' % repr(seed)
-    print 'My PID is %d' % os.getpid()
+    print('Set numpy and tensorflow random seeds to: %s' % repr(seed))
+    print('My PID is %d' % os.getpid())
     if assert_gpu:
         tf_assert_gpu(sess)
     return sess
@@ -145,9 +145,9 @@ def print_trainable_warnings(model, graph=None):
 
     in_graph_not_model = set(trainable_vars_from_graph).difference(set(trainable_vars_from_model))
     if in_graph_not_model:
-        print 'Warning: the following vars are marked as trainable in the graph but not in model.trainable_weights (typical for BatchNormalization layers. "." if expected, "***" if not):'
-        print '\n'.join(['   %4s %s: %s' % (tag(vv.name), vv.name, vv) for vv in in_graph_not_model])
+        print('Warning: the following vars are marked as trainable in the graph but not in model.trainable_weights (typical for BatchNormalization layers. "." if expected, "***" if not):')
+        print('\n'.join(['   %4s %s: %s' % (tag(vv.name), vv.name, vv) for vv in in_graph_not_model]))
     in_model_not_graph = set(trainable_vars_from_model).difference(set(trainable_vars_from_graph))
     if in_model_not_graph:
-        print 'Warning: the following vars are in model.trainable_weights but not marked as trainable in the graph:'
-        print '\n'.join(['   %4s %s: %s' % (tag(vv.name), vv.name, vv) for vv in in_model_not_graph])
+        print('Warning: the following vars are in model.trainable_weights but not marked as trainable in the graph:')
+        print('\n'.join(['   %4s %s: %s' % (tag(vv.name), vv.name, vv) for vv in in_model_not_graph]))

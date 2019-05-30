@@ -24,7 +24,7 @@ import sys
 import os
 import time
 import gzip
-import cPickle as pickle
+import pickle as pickle
 import numpy as np
 import h5py
 import pdb
@@ -106,8 +106,8 @@ def main():
     else:
         raise Exception('Unknown network architecture: %s' % args.arch)
 
-    print 'Train data loaded: {} images, size {}'.format(
-        train_x.shape[0], train_x.shape[1:])
+    print('Train data loaded: {} images, size {}'.format(
+        train_x.shape[0], train_x.shape[1:]))
     #print 'Val data loaded: {} images, size {}'.format(val_x.shape[0], val_x.shape[1:])
 
     #print 'Label dimension: {}'.format(val_y.shape[1:])
@@ -118,11 +118,11 @@ def main():
 
     model = build_model(args, image_h, image_w, image_c)
 
-    print 'All model weights:'
+    print('All model weights:')
     summarize_weights(model.trainable_weights)
-    print 'Model summary:'
+    print('Model summary:')
     # model.summary()      # TOREPLACE
-    print 'Another model summary:'
+    print('Another model summary:')
     model.summarize_named(prefix='  ')
     print_trainable_warnings(model)
 
@@ -207,7 +207,7 @@ def main():
         val_iters = (val_x.shape[0]) // minibatch_size
 
     if args.ipy:
-        print 'Embed: before train / val loop (Ctrl-D to continue)'
+        print('Embed: before train / val loop (Ctrl-D to continue)')
         embed()
 
     # 2. use same noise, eval on 100 samples and save G(z),
@@ -282,14 +282,14 @@ def main():
                                 val_corr_real_bn1, val_corr_fake_bn1],
                             prefix='val_')
 
-            print (
+            print((
                 '%3d (ep %d) val: %s (%.3gs/ep)' %
                 (buddy.train_iter,
                  buddy.epoch,
                  buddy.epoch_mean_pretty_re(
                      '^val_',
                      style=val_style),
-                    toc2()))
+                    toc2())))
 
             if args.output and do_log_val(buddy.epoch, buddy.train_iter, 0):
                 log_scalars(writer, buddy.train_iter,
@@ -354,7 +354,7 @@ def main():
                 save_path = saver.save(
                     sess, '%s/%s_%04d.ckpt' %
                     (args.output, args.snapshot_to, buddy.epoch))
-                print 'snappshotted model to', save_path
+                print('snappshotted model to', save_path)
                 with gzip.open('%s/%s_misc_%04d.pkl.gz' % (args.output, args.snapshot_to, buddy.epoch), 'w') as ff:
                     saved = {'buddy': buddy}
                     pickle.dump(saved, ff)
@@ -373,7 +373,7 @@ def main():
         if args.eval_train_every > 0:
             if buddy.epoch % args.eval_train_every == 0:
                 tic2()
-                for ii in xrange(train_iters):
+                for ii in range(train_iters):
                     start_idx = ii * minibatch_size
                     if args.pairedz:
                         np.random.seed(args.seed + ii)
@@ -428,26 +428,26 @@ def main():
                     log_scalars(writer, buddy.epoch,
                                 {'mean_%s' % name: value for name, value in buddy.epoch_mean_list_re('^evaltrain_bn1_')}, prefix='buddy')
 
-                print (
+                print((
                     '%3d (ep %d) evaltrain: %s (%.3gs/ep)' %
                     (buddy.train_iter,
                      buddy.epoch,
                      buddy.epoch_mean_pretty_re(
                          '^evaltrain_bn0_',
                          style=evaltrain_style),
-                        toc2()))
-                print (
+                        toc2())))
+                print((
                     '%3d (ep %d) evaltrain: %s (%.3gs/ep)' %
                     (buddy.train_iter,
                      buddy.epoch,
                      buddy.epoch_mean_pretty_re(
                          '^evaltrain_bn1_',
                          style=evaltrain_style),
-                        toc2()))
+                        toc2())))
 
         if buddy.epoch == args.epochs:
             if args.ipy:
-                print 'Embed: at end of training (Ctrl-D to exit)'
+                print('Embed: at end of training (Ctrl-D to exit)')
                 embed()
             break   # Extra pass at end: just report val stats and skip training
 
@@ -457,7 +457,7 @@ def main():
             train_order = np.random.permutation(train_x.shape[0])
             train_order2 = np.random.permutation(train_x.shape[0])
         tic3()
-        for ii in xrange(train_iters):
+        for ii in range(train_iters):
             tic2()
             start_idx = ii * minibatch_size
             if args.pairedz:
@@ -529,7 +529,7 @@ def main():
                 buddy.note_weighted_list(
                     batch_x.shape[0], model.trackable_names(), [
                         result_train[k] for k in model.trackable_names()], prefix='train_')
-                print (
+                print((
                     '[%5d] [%2d/%2d] train: %s (%.3gs/i)' %
                     (buddy.train_iter,
                      buddy.epoch,
@@ -537,7 +537,7 @@ def main():
                      buddy.epoch_mean_pretty_re(
                          '^train_',
                          style=train_style),
-                        toc2()))
+                        toc2())))
 
             if args.output and do_log_train(buddy.epoch, buddy.train_iter, ii):
                 if train_histogram_summaries is not None:
@@ -555,8 +555,8 @@ def main():
                             prefix='buddy')
 
             if ii > 0 and ii % 100 == 0:
-                print '  %d: Average iteration time over last 100 train iters: %.3gs' % (
-                    ii, toc3() / 100)
+                print('  %d: Average iteration time over last 100 train iters: %.3gs' % (
+                    ii, toc3() / 100))
                 tic3()
 
             buddy.inc_train_iter()   # after finished training a mini-batch
@@ -569,23 +569,23 @@ def main():
                          value in buddy.epoch_mean_list_re('^train_')},
                         prefix='buddy')
 
-    print '\nFinal'
-    print '%02d:%d val:   %s' % (buddy.epoch,
+    print('\nFinal')
+    print('%02d:%d val:   %s' % (buddy.epoch,
                                  buddy.train_iter,
                                  buddy.epoch_mean_pretty_re(
                                      '^val_',
-                                     style=val_style))
-    print '%02d:%d train: %s' % (buddy.epoch,
+                                     style=val_style)))
+    print('%02d:%d train: %s' % (buddy.epoch,
                                  buddy.train_iter,
                                  buddy.epoch_mean_pretty_re(
                                      '^train_',
-                                     style=train_style))
+                                     style=train_style)))
 
-    print '\nfinal_stats epochs %g' % buddy.epoch
-    print 'final_stats iters %g' % buddy.train_iter
-    print 'final_stats time %g' % buddy.toc()
+    print('\nfinal_stats epochs %g' % buddy.epoch)
+    print('final_stats iters %g' % buddy.train_iter)
+    print('final_stats time %g' % buddy.toc())
     for name, value in buddy.epoch_mean_list_all():
-        print 'final_stats %s %g' % (name, value)
+        print('final_stats %s %g' % (name, value))
 
     if args.output:
         writer.close()   # Flush and close

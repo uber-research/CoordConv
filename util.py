@@ -102,10 +102,10 @@ def make_standard_parser(description='No decription provided', arch_choices=DEFA
 import numpy as np
 
 def merge_dict_append(d1,d2):
-    assert d1.keys() == d2.keys(), 'Two dictionaries to merge must have the same set of keys'
+    assert list(d1.keys()) == list(d2.keys()), 'Two dictionaries to merge must have the same set of keys'
 
     merged = {}
-    for kk in d1.keys():
+    for kk in list(d1.keys()):
         v1 = d1[kk] if isinstance(d1[kk], list) else [d1[kk]]
         v2 = d2[kk] if isinstance(d2[kk], list) else [d2[kk]]
         merged[kk] = v1 + v2 
@@ -113,7 +113,7 @@ def merge_dict_append(d1,d2):
 
 def average_dict_values(dd):
     averaged = {}
-    for kk in dd.keys():
+    for kk in list(dd.keys()):
         assert len(dd[kk]) == len(dd['weights']), "lengths must match"
         x1 = np.array(dd[kk])
         x2 = np.array(dd['weights'])
@@ -177,7 +177,7 @@ def load_sort_of_clevr():
             'sort_of_clevr_2objs_10rad_50000imgs_64x.h5')
 
     if not os.path.isfile(filename):
-        print('{} does not exist.. Try running ./data/sort_of_clevr_generator.py ?'.format(filename))
+        print(('{} does not exist.. Try running ./data/sort_of_clevr_generator.py ?'.format(filename)))
         return
 
     ff = h5py.File(filename, 'r')

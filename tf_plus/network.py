@@ -94,7 +94,7 @@ class BaseLayer(base.Layer):
                     st = '%s%s%s: %s' % (prefix, final_prefix, usename, objstr)
                     if len(owg.groups) > 0:
                         st += ' (%s)' % (', '.join([str(gg) for gg in owg.groups]))
-                    print st
+                    print(st)
                 if hasattr(owg.obj, 'summarize_named'):
                     owg.obj.summarize_named(include_groups=include_groups, prefix=prefix + '  ', final_prefix='.')
 
@@ -103,7 +103,7 @@ class BaseLayer(base.Layer):
         if include_groups is not None and not (isinstance(include_groups, list) or isinstance(include_groups, tuple)):
             include_groups = [include_groups]
         ret = OrderedDict()
-        for name, owgs in self._named_objects.items():
+        for name, owgs in list(self._named_objects.items()):
             #print 'TODO NEXT: fix the problem where, say, trackables under unnamed layers are not returned'
             plural_name = name + 's'
             for ii, owg in enumerate(owgs):
@@ -126,16 +126,16 @@ class BaseLayer(base.Layer):
         return ret
 
     def obj_list(self, include_groups=None, recursive=True):
-        return self.named_dict(include_groups=include_groups, recursive=recursive).values()
+        return list(self.named_dict(include_groups=include_groups, recursive=recursive).values())
 
     def own_obj_list(self, include_groups=None):
-        return self.named_dict(include_groups=include_groups, recursive=False).values()
+        return list(self.named_dict(include_groups=include_groups, recursive=False).values())
 
     def trackable_dict(self):
         return self.named_dict(include_groups='trackable')
 
     def trackable_names(self):
-        return self.named_dict(include_groups='trackable').keys()
+        return list(self.named_dict(include_groups='trackable').keys())
 
     def update_dict(self):
         return OrderedDict(('update__%d' % ii, update) for ii, update in enumerate(self.updates))

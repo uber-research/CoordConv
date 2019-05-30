@@ -1,3 +1,24 @@
+
+# Copyright (c) 2018 Uber Technologies, Inc.
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import os
 import errno
 import time
@@ -8,11 +29,11 @@ class DuckStruct(object):
     '''Use to store anything!'''
 
     def __init__(self, **kwargs):
-        for k,v in kwargs.items():
+        for k,v in list(kwargs.items()):
             setattr(self, k, v)
 
     def __repr__(self):
-        rep = ['%s=%s' % (k, repr(v)) for k,v in self.__dict__.items()]
+        rep = ['%s=%s' % (k, repr(v)) for k,v in list(self.__dict__.items())]
         return 'DuckStruct(%s)' % ', '.join(rep)
 
 
@@ -26,10 +47,10 @@ class DotDict(dict):
         super(DotDict, self).__init__(*args, **kwargs)
         for arg in args:
             if isinstance(arg, dict):
-                for k, v in arg.iteritems():
+                for k, v in arg.items():
                     self[k] = v
         if kwargs:
-            for k, v in kwargs.iteritems():
+            for k, v in kwargs.items():
                 self[k] = v
 
     def __getattr__(self, attr):
@@ -91,7 +112,7 @@ class WithTimer(object):
     def __exit__(self, *args):
         if not self.quiet:
             titlestr = (' ' + self.title) if self.title else ''
-            print 'Elapsed%s: wall: %.06f, sys: %.06f' % ((titlestr,) + self.elapsed())
+            print('Elapsed%s: wall: %.06f, sys: %.06f' % ((titlestr,) + self.elapsed()))
 
 
 class TicToc(object):

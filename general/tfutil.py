@@ -1,3 +1,24 @@
+
+# Copyright (c) 2018 Uber Technologies, Inc.
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import os
 import numpy as np
 from orderedset import OrderedSet
@@ -406,7 +427,7 @@ def log_scalars(writer, iters, scalars_dict, prefix=None):
     if len(prefix) > 0 and not prefix.endswith('/'):
         prefix = prefix + '/'
         
-    for key, val in scalars_dict.iteritems():
+    for key, val in scalars_dict.items():
         if hasattr(val, 'dtype'):
             val = np.asscalar(val)   # Convert, e.g., numpy.float32 -> float
         writer.add_summary(tf.Summary(value=[tf.Summary.Value(tag='%s%s' % (prefix, key), simple_value=val)]).SerializeToString(), iters)
@@ -472,19 +493,19 @@ def add_grads_and_vars_hist_summaries(grads_and_vars):
 def add_grad_summaries(grads_and_vars, add_summaries_train=True, quiet=False):
     # Add summary nodes for grad values and prints a summary as well
     if not quiet:
-        print '\nGrads:'
+        print('\nGrads:')
         if len(grads_and_vars) == 0:
-            print '  <None>'
+            print('  <None>')
     for grad, var in grads_and_vars:
         if grad is None:
             continue   # skip grads that are None (corner case: not computed because model.loss has no dependence?)
         grad_name = '%s/%s__grad' % tuple(var.name.rsplit('/', 1))
         if not quiet:
-            print '  ', grad_name, grad
+            print('  ', grad_name, grad)
         if add_summaries_train:
             hist_summaries_train(grad, name=grad_name)
     if not quiet:
-        print
+        print()
 
 
 ########################
@@ -547,8 +568,8 @@ def sess_run_dict(sess, fetch_names, fetch_vars=None, feed_dict=None, options=No
     if dict_mode:
         assert fetch_vars is None, 'provide either dict or list of names and vars, not both'
         fetch_dict = fetch_names
-        fetch_names = fetch_dict.keys()
-        fetch_vars = fetch_dict.values()
+        fetch_names = list(fetch_dict.keys())
+        fetch_vars = list(fetch_dict.values())
     
     assert len(fetch_names) == len(fetch_vars), 'length of fetch_names must match length of fetch_vars'
     assert isinstance(fetch_vars, list) or isinstance(fetch_vars, tuple), 'fetch_vars should be list or tuple'
@@ -588,15 +609,15 @@ def summarize_weights(weights, sess=None):
     titl = '  %50s: %10s %-20s' % ('NAME', 'SIZE', 'SHAPE')
     if sess:
         titl += ' %10s, %10s, %10s' % ('MIN', 'MAX', 'RMS')
-    print titl
+    print(titl)
     for ii,var in enumerate(weights):
         st = '  %50s: %10d %-20s' % (var.name, np.prod(var.get_shape().as_list()), var.get_shape().as_list())
         if sess:
             val = vals[ii]
             st += ' %10s, %10s, %10s' % ('%.3g' % val.min(), '%.3g' % val.max(), '%.3g' % np.sqrt((val**2).mean()))
-        print st
+        print(st)
         total_params += np.prod(var.get_shape().as_list())
-    print '  %50s: %10d' % ('Total', total_params)
+    print('  %50s: %10d' % ('Total', total_params))
     return total_params
 
 
@@ -605,16 +626,16 @@ def val_or_dynamic(vord):
 
 
 def summarize_opt(opt):
-    print 'Optimizer:'
-    print '   ', opt
+    print('Optimizer:')
+    print('   ', opt)
     if isinstance(opt, tf.train.MomentumOptimizer):
-        print '   LR: %s, momentum: %g, use_nesterov: %s' % (val_or_dynamic(opt._learning_rate), opt._momentum, opt._use_nesterov)
+        print('   LR: %s, momentum: %g, use_nesterov: %s' % (val_or_dynamic(opt._learning_rate), opt._momentum, opt._use_nesterov))
     elif isinstance(opt, tf.train.RMSPropOptimizer):
-        print '   LR: %s, momentum: %g, decay: %g, epsilon: %g' % (val_or_dynamic(opt._learning_rate), opt._momentum, opt._decay, opt._epsilon)
+        print('   LR: %s, momentum: %g, decay: %g, epsilon: %g' % (val_or_dynamic(opt._learning_rate), opt._momentum, opt._decay, opt._epsilon))
     elif isinstance(opt, tf.train.AdamOptimizer):
-        print '   LR: %s, beta1: %g, beta2: %g, epsilon: %g' % (val_or_dynamic(opt._lr), opt._beta1, opt._beta2, opt._epsilon)
+        print('   LR: %s, beta1: %g, beta2: %g, epsilon: %g' % (val_or_dynamic(opt._lr), opt._beta1, opt._beta2, opt._epsilon))
     else:
-        print '   (cannot summarize unknown type of optimizer)'
+        print('   (cannot summarize unknown type of optimizer)')
 
 
 def tf_assert_gpu(sess):
@@ -624,8 +645,8 @@ def tf_assert_gpu(sess):
     try:
         sess.run(bar, {foo: 1})
     except:
-        print '\n\n\ntf_assert_gpu: no GPU is present! In case it helps, CUDA_VISIBLE_DEVICES is %s' % repr(os.environ.get('CUDA_VISIBLE_DEVICES', None))
-        print 'See error below:\n\n\n'
+        print('\n\n\ntf_assert_gpu: no GPU is present! In case it helps, CUDA_VISIBLE_DEVICES is %s' % repr(os.environ.get('CUDA_VISIBLE_DEVICES', None)))
+        print('See error below:\n\n\n')
         raise
 
 

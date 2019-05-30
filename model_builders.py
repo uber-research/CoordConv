@@ -312,7 +312,7 @@ class ConvImagePainter(Layers):
 class ConvRegressor(Layers):
     '''A model net that paints a circle with one-hot center inputs'''
 
-    def __init__(self, l2=0, x_dim=64, y_dim=64, fs=3,
+    def __init__(self, l2=0, x_dim=64, y_dim=64,
                  mul=1, _type='conv_uniform'):
         self.type=_type
 
@@ -330,9 +330,9 @@ class ConvRegressor(Layers):
                        kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),
                 Conv2D(8, (1,1), padding='same',
                        kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),
-                Conv2D(8, (fs,fs), padding='same',
+                Conv2D(8, (3,3), padding='same',
                        kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),
-                Conv2D(2, (fs,fs), padding='same',
+                Conv2D(2, (3,3), padding='same',
                         kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),  
                 MaxPooling2D(pool_size=64,strides=64,padding='valid'),
 
@@ -360,16 +360,16 @@ class ConvRegressor(Layers):
                        kernel_initializer=he_normal, strides=2,kernel_regularizer=l2reg(l2)),  
                 BatchNormalization(momentum=0.9, epsilon=1e-5),
                 ReLu,
-                Conv2D(16*mul, (fs,fs), padding='same',strides=2,
+                Conv2D(16*mul, (3,3), padding='same',strides=2,
                        kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),  
                 ReLu,
                 Conv2D(16*mul, (1,1), padding='same',strides=1,
                        kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),  
                 ReLu,
-                Conv2D(16*mul, (fs,fs), padding='same',strides=2,
+                Conv2D(16*mul, (3,3), padding='same',strides=2,
                        kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),  
                 ReLu,
-                Conv2D(2, (fs,fs), padding='same',
+                Conv2D(2, (3,3), padding='same',
                        kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),  
                 ReLu,
                 GlobalPooling #pool_size=-1,strides=1,padding='valid'),
@@ -390,7 +390,7 @@ class ConvRegressor(Layers):
                        kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),  
                 ReLu,
                 MaxPooling2D(pool_size=2,strides=2,padding='valid'),
-                Conv2D(16*mul, (fs,fs), padding='same',
+                Conv2D(16*mul, (3,3), padding='same',
                        kernel_initializer=he_normal, kernel_regularizer=l2reg(l2)),  
                 ReLu,
                 Flatten(),
