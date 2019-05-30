@@ -45,7 +45,7 @@ from util import make_standard_parser, merge_dict_append, average_dict_values
 
 from model_builder_faster_rcnn import RegionProposalSampler
 from utils_faster_rcnn import make_anchors_mnist, make_anchors_mnist_same, plot_pos_boxes, plot_boxes_pos_neg, plot_pos_boxes_thickness
-from field_of_mnist.loader import load_tvt_n_per_field, load_tvt_n_per_field_centercrop
+from data.field_of_mnist.loader import load_tvt_n_per_field, load_tvt_n_per_field_centercrop
 from params import RPNParams, BoxSamplerParams, NMSParams
 from matplotlib.pyplot import *
 
