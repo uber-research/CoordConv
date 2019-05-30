@@ -192,26 +192,6 @@ def main():
     summarize_opt(opt)
     print(('LR Policy:', lr_policy))
 
-    #add_grad_summaries(grads_and_vars)
-    #image_summaries_traintest(model.logits)
-    #if 'input_1hot' in model.named_keys(): 
-    #    image_summaries_traintest(model.input_1hot)
-    #if 'input_images' in model.named_keys(): 
-    #    image_summaries_traintest(model.input_images)
-    #if 'prob' in model.named_keys(): 
-    #    image_summaries_traintest(model.prob)
-    #if 'center_prob' in model.named_keys(): 
-    #    image_summaries_traintest(model.center_prob)
-    #if 'center_logits' in model.named_keys(): 
-    #    image_summaries_traintest(model.center_logits)
-    #if 'pixelwise_prob' in model.named_keys(): 
-    #    image_summaries_traintest(model.pixelwise_prob)
-    #if 'center_logits' in model.named_keys(): 
-    #    image_summaries_traintest(model.center_logits)
-    #if 'sharpened_logits' in model.named_keys(): 
-    #    image_summaries_traintest(model.sharpened_logits)
-
-
     # 3. OPTIONALLY SAVE OR LOAD VARIABLES (e.g. model params, model running BN means, optimization momentum, ...) and then finalize initialization
     saver = tf.train.Saver(max_to_keep=None) if (args.output or args.load) else None
     if args.load:
@@ -234,12 +214,7 @@ def main():
     uninitialized_vars = tf_get_uninitialized_variables(sess)
     init_missed_vars = tf.variables_initializer(uninitialized_vars, 'init_missed_vars')
     sess.run(init_missed_vars)
-    ## Print warnings about any TF vs. Keras shape mismatches
-    ##warn_misaligned_shapes(model)
-    ## Make sure all variables, which are model variables, have been initialized (e.g. model params and model running BN means)
     tf_assert_all_init(sess)
-    #tf.global_variables_initializer().run()
-
 
     # 4. SETUP TENSORBOARD LOGGING with tf.summary.merge
 
@@ -463,47 +438,6 @@ def main():
             with WithTimer('sess.run train iter', quiet=not args.verbose):
                 result_train = sess_run_dict(sess, fetch_dict, feed_dict=feed_dict)
                                 
-            #if ii == 0:
-            #if ii== 0 and result_train['mse_loss'] < 0.01:
-            #    plot_fetch_dict = {
-            #            'prob': model.prob,
-            #            'prob_flat': model.prob_flat,
-            #            'logits': model.logits,
-            #            'logits_flat': model.logits_flat,
-            #            'labels': model.labels,
-            #            'labels_flat': model.labels_flat,
-            #            #'concat_indices': model.concat_indices,
-            #            'argmax_prob': model.argmax_prob,
-            #            'argmax_label': model.argmax_label,
-            #            'argmax_x': model.argmax_x,
-            #            'argmax_y': model.argmax_y,
-            #            'argmax_x_l': model.argmax_x_l,
-            #            'argmax_y_l': model.argmax_y_l,
-            #            }
-            #    results = sess_run_dict(sess, plot_fetch_dict, feed_dict=feed_dict)
-            #    embed()
-            
-            #if ii == 0:
-            #    plot_fetch_dict = {
-            #            'pixelwise_prob_flat': model.pixelwise_prob_flat,
-            #            'logits_flat': model.logits_flat,
-            #            'labels_flat': model.labels_flat,
-            #            'painted': model.painted,
-            #            'n_intersection': model.n_intersection,
-            #            'n_union': model.n_union,
-            #            }
-            #    results = sess_run_dict(sess, plot_fetch_dict, feed_dict=feed_dict)
-            #    embed()
-            #    HERE
-
-            #if ii == 0:
-            #    plot_fetch_dict = {
-            #            'prepped_coords': model.prepped_coords,
-            #            }
-            #    results = sess_run_dict(sess, plot_fetch_dict, feed_dict=feed_dict)
-            #    embed()
-            #    HERE
-
             buddy.note_weighted_list(minibatch_size, model.trackable_names(), [result_train[k] for k in model.trackable_names()], prefix='train_')
 
             if do_log_train(buddy.epoch, buddy.train_iter, ii):
@@ -525,32 +459,6 @@ def main():
                             prefix='train')
 
             if ii > 0 and ii % 100 == 0: print(('  %d: Average iteration time over last 100 train iters: %.3gs' % (ii, toc3() / 100))); tic3()
-
-            ## DEBUG
-
-            ## dynamic p_size and n_size, shouldn slightly very every sample 
-            #if ii > 0 and ii % 100 == 0:
-            #    print 'TRAIN --- '
-            #    print sess.run(model.p_size, feed_dict=feed_dict)
-            #    print sess.run(model.n_size, feed_dict=feed_dict)
-            #    valid = sess.run(model.valid_mask, feed_dict=feed_dict)
-            #    if not valid.all():
-            #        print 'some boxes are invalid'
-            #        embed()
-            #    #iou = sess.run(model.iou_matrix, feed_dict=feed_dict)
-            #    #pos_box_gt_idx, pos_iou = sess.run([model.box_sampler.pos_box_gt_indices, model.pos_iou], feed_dict=feed_dict)
-            #    #outbound_mask = sess.run(model.box_sampler.outbound_mask, feed_dict=feed_dict)
-            #    #closest_mask = sess.run(model.box_sampler.closest_mask, feed_dict=feed_dict)
-            #    #closest_pred_box = sess.run(model.box_sampler.closest_pred_box, feed_dict=feed_dict)
-            #    #pos_mask1 = sess.run(model.box_sampler.pos_mask1, feed_dict=feed_dict)
-            #    #pos_candi_mask = sess.run(model.box_sampler.pos_candi_mask, feed_dict=feed_dict)
-            #    #pos_candi_indx = sess.run(model.box_sampler.pos_candi_indx, feed_dict=feed_dict)
-            #    nms_boxes, nms_iou, nms_iou_self, nms_scores, argmax_nms_iou = sess.run([model.nms_boxes, model.nms_iou_matrix, model.nms_iou_self_matrix, model.nms_scores, model.argmax_nms_iou], feed_dict=feed_dict)
-            #    embed()
-
-
-
-            ## END DEBUG
 
 
             buddy.inc_train_iter()   # after finished training a mini-batch
