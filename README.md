@@ -65,8 +65,10 @@ Use ```--data_h5 data/rectangle_4_uniform.h5``` and ```--data_h5 data/rectangle_
 
 ## Generative Tasks
 ```
-python train_gan.py --arch simple_gan -mb 16 -E 50 -L 0.0001 --lr2 .0005 --opt adam --z_dim 25 --snapshot-every 1
-python train_gan.py --arch clevr_gan -mb 16 -E 50 -L 0.0001 --lr2 .0005 --opt adam --z_dim 25 --snapshot-every 1
+# coordconv GAN
+python train_gan.py --arch clevr_coordconv_in_gd -mb 16 -E 50 -L 0.0001 --lr2 .0005 --opt adam --z_dim 256 --snapshot-every 1
+# deconv GAN
+python train_gan.py --arch clevr_gan -mb 16 -E 50 -L 0.0001 --lr2 .0005 --opt adam --z_dim 256 --snapshot-every 1
 ```
 
 ## TODO
