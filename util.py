@@ -153,6 +153,36 @@ def image_separator(consolidated_images, nh=10, nw=10):
             images.append(_image)
     return images
 
+def merge(images, size, black_divider=True):
+    h, w = images.shape[1], images.shape[2]
+    if (images.shape[3] in (3,4)):
+        c = images.shape[3]
+        if black_divider:
+            img = np.zeros((h * size[0] + size[0]-1, w * size[1] + size[1] - 1, c))
+        else:
+            img = np.ones((h * size[0] + size[0]-1, w * size[1] + size[1] - 1, c))
+
+        for idx, image in enumerate(images):
+            i = idx % size[1]
+            j = idx // size[1]
+            start_w = i*w if i == 0 else i*(w+1)
+            start_h = j*h if j == 0 else j*(h+1)
+            img[start_h:start_h + h, start_w:start_w + w, :] = image
+        return img
+    elif images.shape[3]==1:
+        if black_divider:
+            img = np.zeros((h * size[0] + size[0] - 1, w * size[1] + size[1] - 1))
+        else:
+            img = np.ones((h * size[0] + size[0] - 1, w * size[1] + size[1] - 1))
+        for idx, image in enumerate(images):
+            i = idx % size[1]
+            j = idx // size[1]
+            start_w = i*w if i == 0 else i*(w+1)
+            start_h = j*h if j == 0 else j*(h+1)
+            img[start_h:start_h + h, start_w:start_w + w] = image[:,:,0]
+        return img
+    else:
+        raise ValueError('in merge(images,size) images parameter ''must have dimensions: HxW or HxWx3 or HxWx4')
 
 def save_images(images, size, image_path, black_divider=True):
     image = np.squeeze(merge(images, size, black_divider=black_divider))

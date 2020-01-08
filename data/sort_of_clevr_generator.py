@@ -28,9 +28,10 @@ import cv2
 import os, sys
 import numpy as np
 import random
-import cPickle as pickle
+import pickle
 import h5py
-import scipy.misc
+#import scipy.misc  # Deprecated
+import imageio 
 from IPython import embed
 
 lab_root = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..')
@@ -119,14 +120,14 @@ for img_count in range(10):
     #path = os.path.join(dirs,'img{}_{}x{}bgr.png'.format(img_count, img_size, img_size))
     path1 = os.path.join(dirs,'img{}_{}x{}rgb.png'.format(img_count, img_size, img_size))
     image = (train_x[img_count]+1)*127.5
-    #cv2.imwrite(path, image)
-    scipy.misc.imsave(path1, image)
+    #scipy.misc.imsave(path1, image) # Deprecated
+    imageio.imwrite(path1, image)
     
     #path = os.path.join(dirs,'img{}_512x512bgr.png'.format(img_count))
     path1 = os.path.join(dirs,'img{}_512x512rgb.png'.format(img_count))
     image = cv2.resize((train_x[img_count]+1)*127.5, (512,512))
-    #cv2.imwrite(path, image)
-    scipy.misc.imsave(path1, image)
+    #scipy.misc.imsave(path1, image) # Deprecated
+    imageio.imwrite(path1, image)
 
 filename = 'sort_of_clevr_{}objs_{}rad_{}imgs_{}x'.format(len(colors), size, train_size, img_size)
 

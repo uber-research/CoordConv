@@ -24,13 +24,12 @@ import sys
 import os
 import time
 import gzip
-import pickle as pickle
+import pickle
 import numpy as np
 import h5py
-import pdb
+#import pdb
 from IPython import embed
 import colorama
-import setproctitle
 import tensorflow as tf
 
 from general.util import tic, toc, tic2, toc2, tic3, toc3, mkdir_p, WithTimer
